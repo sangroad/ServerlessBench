@@ -19,15 +19,17 @@ SECONDS_OF_A_DAY = 3600*24
 config = yaml.load(open(os.path.join(os.path.dirname(__file__),'config.yaml')), yaml.FullLoader)
 SAMPLE_NUM = config['sample_number']
 
+# Pick IAT randomly from invocation CDF
 def pickRandAvgIAT():
-    filename = os.path.join(os.path.dirname(__file__),'invokesCDF.csv')
+    filename = os.path.join(os.path.dirname(__file__),'../CSVs/invokesCDF.csv')
     invokeTime = utils.getRandValueRefByCDF(filename)
     # second scale
     IAT = SECONDS_OF_A_DAY / invokeTime
     return IAT
 
+# Generate csv file contains IATs
 def sampleActionIATCSVGen(appNum):
-    outfile = open("possibleIATs.csv", "w")
+    outfile = open("../CSVs/possibleIATs.csv", "w")
     outfile.write("IAT\n")
 
     for i in range(appNum):

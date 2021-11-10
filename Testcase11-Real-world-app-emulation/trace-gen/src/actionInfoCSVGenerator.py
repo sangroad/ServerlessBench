@@ -39,7 +39,7 @@ def chainLenSampleListGen(sampleNum):
 # parse the CDF file, return the list of each x (x is length in the CDF),
 # and the dictionary of x:F(x)
 def parseChainLenCDFFile():
-    filename = os.path.join(os.path.dirname(__file__),'chainlenCDF.csv')
+    filename = os.path.join(os.path.dirname(__file__),'../CSVs/chainlenCDF.csv')
     f = open(filename, 'r')
     f.readline()
     lengthList = []
@@ -54,22 +54,25 @@ def parseChainLenCDFFile():
     return (lengthList, CDFdict)
 
 def pickRandExecTime():
-    filename = os.path.join(os.path.dirname(__file__),'execTimeCDF.csv')
+    filename = os.path.join(os.path.dirname(__file__),'../CSVs/execTimeCDF.csv')
     randExecTime = utils.getRandValueRefByCDF(filename)
     return randExecTime
 
 def pickRandMem():
-    filename = os.path.join(os.path.dirname(__file__),'memCDF.csv')
+    filename = os.path.join(os.path.dirname(__file__),'../CSVs/memCDF.csv')
     # Use bias in original code
     # bias = 30
     randMem = utils.getRandValueRefByCDF(filename)
     return randMem
 
+# Generate the csv file to make the samples for OpenWhisk
+# csv file contains: application ID, function ID, execution time, mem requirement
 def sampleActionCSVGen(chainLenSampleList):
     sampleNum = len(chainLenSampleList)
-    outfile = open("appComputeInfo.csv", "w")
+    outfile = open("../CSVs/appComputeInfo.csv", "w")
     outfile.write("AppName,FunctionName,MemReq,ExecTime\n")
 
+    print(sampleNum)
     for sequenceID in range(sampleNum):
         appName = "app%d" % sequenceID
         length = chainLenSampleList[sequenceID]
@@ -86,12 +89,11 @@ def sampleActionCSVGen(chainLenSampleList):
             execTime = pickRandExecTime()
             outfile.write("%s,%s,%d,%d\n" % (appName, funcName, mem, execTime))
 
-        print("Sample creation complete")
+        print("app%d creation complete" % sequenceID)
 
     outfile.close()
     return
 
-# Generate the csv file to make the samples for OpenWhisk
 def sampleActionWskGen(chainLenSampleList):
     sampleNum = len(chainLenSampleList)
 
