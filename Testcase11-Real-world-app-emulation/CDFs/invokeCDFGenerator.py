@@ -9,7 +9,7 @@
 # See the Mulan PSL v1 for more details.
 #
 
-# We don't include Azure's dataset in our repo, so the file is just for reference 
+# We don't include Azure's dataset in our repo, so the file is just for reference
 # The dataset is open-source at https://github.com/Azure/AzurePublicDataset
 
 # Get the invocation number of every application in a day
@@ -17,7 +17,7 @@ def getAppInvokes():
     # Days that is calculated
     days = 14
     # key: hashfunction; value: invocation number
-    appInvokesDict = {} 
+    appInvokesDict = {}
     for i in range(1,1 + days):
         filename = "../azure-trace/invocations_per_function_md.anon.d{:0>2d}.csv".format(i)
         f = open(filename, 'r')
@@ -25,7 +25,7 @@ def getAppInvokes():
         for line in f:
             lineSplit = line.split(',')
             HashApp = lineSplit[1]
-            
+
             # Calculate the total invoke number of the function (in a line)
             invokes = lineSplit[4:]
             # print(line)
