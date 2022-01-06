@@ -19,6 +19,14 @@ MILLISECONDS_PER_SEC = 1000
 
 config = yaml.load(open(os.path.join(os.path.dirname(__file__),'config.yaml')), yaml.FullLoader)
 SAMPLE_NUM = config['sample_number']
+workloadDir = "../CSVs/%i" % SAMPLE_NUM
+
+def genWorkloadDir(sampleNum):
+    try:
+        if not os.path.exists(sampleNum):
+            os.makedirs(workloadDir)
+    except OSError:
+        print("Error: Creating directiry %s" % workloadDir)
 
 # Generate a list of length according to the CDF of the chain length in an app,
 # each of which represents the chain length of an application
@@ -69,7 +77,7 @@ def pickRandMem():
 # csv file contains: application ID, function ID, execution time, mem requirement
 def sampleActionCSVGen(chainLenSampleList):
     sampleNum = len(chainLenSampleList)
-    outfile = open("../CSVs/appComputeInfo.csv", "w")
+    outfile = open("%s/appComputeInfo.csv" % workloadDir, "w")
     outfile.write("AppName,FunctionName,MemReq,ExecTime\n")
 
     print(sampleNum)
@@ -130,5 +138,6 @@ def sampleActionWskGen(chainLenSampleList):
 
 
 if __name__ == '__main__':
+    genWorkloadDir(SAMPLE_NUM)
     chainLenSampleList = chainLenSampleListGen(SAMPLE_NUM)
     sampleActionCSVGen(chainLenSampleList)

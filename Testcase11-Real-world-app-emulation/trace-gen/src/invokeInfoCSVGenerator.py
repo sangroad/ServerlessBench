@@ -21,11 +21,12 @@ MILLISECONDS_PER_SEC = 1000
 
 config = yaml.load(open(os.path.join(os.path.dirname(__file__),'config.yaml')), yaml.FullLoader)
 SAMPLE_NUM = config['sample_number']
+workloadDir = "../CSVs/%i" % SAMPLE_NUM
 
 # Generate mapping between application and IAT
-def mapActionandIAT(actionNum):
-    actionFileName = "../CSVs/appComputeInfo.csv"
-    IATFileName = "../CSVs/possibleIATs.csv"
+def mapActionandIAT():
+    actionFileName = "%s/appComputeInfo.csv" % workloadDir
+    IATFileName = "%s/possibleIATs.csv" % workloadDir
     actionIATdict = {}
 
     actionFile = open(actionFileName, "r")
@@ -52,7 +53,7 @@ def mapActionandIAT(actionNum):
 def invokeTimelineGen(actionDict):
     # millisecond
     totalRunTime = config['total_run_time'] * MILLISECONDS_PER_SEC
-    timelineFileName = "../CSVs/funcTimeline.csv"
+    timelineFileName = "%s/funcTimeline_%i.csv" % (workloadDir, SAMPLE_NUM)
     #timelineFile = open(timelineFileName, "w")
     csv_columns = []
     csv_columns.append("appName")
@@ -66,6 +67,7 @@ def invokeTimelineGen(actionDict):
         data = np.zeros(totalRunTime)
         actionName = key
         IAT = int(value)
+        print(value)
 
         for i in range(0, totalRunTime, IAT):
             data[i] = 1
@@ -82,5 +84,5 @@ def invokeTimelineGen(actionDict):
 
 
 if __name__ == '__main__':
-    actionIATdict = mapActionandIAT(SAMPLE_NUM)
+    actionIATdict = mapActionandIAT()
     invokeTimelineGen(actionIATdict)
