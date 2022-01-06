@@ -7,5 +7,5 @@ __pycache__/
 *.zip
 test.py
 *.csv
-*.csv#
+#*.csv#
 function
