@@ -19,8 +19,8 @@ def main(args):
 	# print exec time in millisecond scale
 	print(execTime)
 
-	return { 'execTime' : execTime }
+	return { 'runTime' : execTime }
 
 # for debug
 if __name__ == '__main__':
-	main({ 'execTime' : 0 })
+	main({ 'runTime' : 0 })
