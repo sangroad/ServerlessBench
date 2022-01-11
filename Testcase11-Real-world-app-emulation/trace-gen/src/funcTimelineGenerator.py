@@ -9,6 +9,7 @@
 # See the Mulan PSL v1 for more details.
 #
 
+from io import StringIO
 import random
 import os
 import yaml
@@ -49,8 +50,40 @@ def mapActionandIAT():
 
     return actionIATdict
 
-# Generate 1ms scale timeline
 def invokeTimelineGen(actionDict):
+    # millisecond
+    totalRunTime = config['total_run_time'] * MILLISECONDS_PER_SEC
+    timelineFileName = "%s/funcTimeline_%i.csv" % (workloadDir, SAMPLE_NUM)
+    timelineFile = open(timelineFileName, "w")
+    appNameStr = ""
+
+    for key in actionDict:
+        appNameStr += key + ","
+    
+    appNameStr = appNameStr[:-1] + "\n"
+
+    timelineFile.write(appNameStr)
+    print(appNameStr)
+    IATs = list(map(int, actionDict.values()))
+    print(IATs)
+    print(len(actionDict))
+
+    for i in range(totalRunTime):
+        actionLen = len(actionDict)
+        data = np.zeros(actionLen)
+        for idx, val in enumerate(IATs):
+            if i % val == 0:
+                data[idx] = 1
+
+        dataStr = ','.join(["%d" % num for num in data]) + "\n"
+        timelineFile.write(dataStr)
+
+    timelineFile.close()
+    print("function timeline generated")
+
+
+# Generate 1ms scale timeline
+def invokeTimelineGenOld(actionDict):
     # millisecond
     totalRunTime = config['total_run_time'] * MILLISECONDS_PER_SEC
     timelineFileName = "%s/funcTimeline_%i.csv" % (workloadDir, SAMPLE_NUM)
@@ -78,10 +111,8 @@ def invokeTimelineGen(actionDict):
         csv_rows.append(row)
 
     df = pd.DataFrame(csv_rows, columns=csv_columns)
-    df.transpose()
+    # df = df.transpose()
     df.to_csv(timelineFileName, mode="w")
-
-
 
 if __name__ == '__main__':
     actionIATdict = mapActionandIAT()
