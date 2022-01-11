@@ -5,7 +5,6 @@ config = yaml.load(open(os.path.join(os.path.dirname(__file__),'config.yaml')), 
 SAMPLE_NUM = config['sample_number']
 workloadDir = "../CSVs/%i" % SAMPLE_NUM
 computeInfoFile = "%s/appComputeInfo.csv" % workloadDir
-timelineFile = "%s/funcTimeline_%i.csv" % (workloadDir, SAMPLE_NUM)
 
 def refractorAppComputeInfo():
 	infoFile = open(computeInfoFile, "r")
