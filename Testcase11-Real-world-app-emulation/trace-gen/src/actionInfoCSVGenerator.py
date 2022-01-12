@@ -80,14 +80,14 @@ def sampleActionCSVGen(chainLenSampleList):
     outfile = open("%s/appComputeInfo.csv" % workloadDir, "w")
     outfile.write("AppName,FunctionName,MemReq,ExecTime\n")
 
-    print(sampleNum)
+    print("Number of applications: %d" % sampleNum)
     for sequenceID in range(sampleNum):
         appName = "app%d" % sequenceID
         length = chainLenSampleList[sequenceID]
 
-        # TODO: OpenWhisk's sequenceMaxActions is 50
+        # OpenWhisk's sequenceMaxActions is 50. But we extend it to 999999
         # The configuration can be found in $OPENWHISK_SRC/ansible/group_vars/all
-        if length > 50:
+        if length > 999999:
             continue
 
         # Create functions in the app

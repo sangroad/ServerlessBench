@@ -37,7 +37,6 @@ def actionWskGen(chainList):
 		sequenceID = key[3:]
 		functionID = 0
 		funcChainStr = ""
-		print(sequenceID)
 
 		for info in val:
 			mem = info[0]
@@ -45,6 +44,8 @@ def actionWskGen(chainList):
 
 			if int(mem) < 128:
 				mem = '128'
+			if int(mem) > 512:
+				mem = '512'
 
 			cmd = "./action_update.sh %s %s %s %s" % (sequenceID, functionID, execTime, mem)
 			print(cmd)

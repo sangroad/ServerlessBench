@@ -1,14 +1,3 @@
-# Copyright (c) 2020 Institution of Parallel and Distributed System, Shanghai Jiao Tong University
-# ServerlessBench is licensed under the Mulan PSL v1.
-# You can use this software according to the terms and conditions of the Mulan PSL v1.
-# You may obtain a copy of Mulan PSL v1 at:
-#     http://license.coscl.org.cn/MulanPSL
-# THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR
-# PURPOSE.
-# See the Mulan PSL v1 for more details.
-#
-
 import os
 import yaml
 import numpy as np
@@ -56,16 +45,13 @@ def invokeTimelineGen(actionDict):
 
     for key in actionDict:
         appNameStr += key + ","
-    
+
     appNameStr = appNameStr[:-1] + "\n"
 
     timelineFile.write(appNameStr)
-    print(appNameStr)
     IATs = list(map(int, actionDict.values()))
-    print(IATs)
-    print(len(actionDict))
 
-    for i in range(totalRunTime):
+    for i in range(1, totalRunTime):
         actionLen = len(actionDict)
         data = np.zeros(actionLen)
         for idx, val in enumerate(IATs):
