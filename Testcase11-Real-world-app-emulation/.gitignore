@@ -11,3 +11,5 @@ test.py
 function
 .vscode/
 .idea/
+*.o
+run
