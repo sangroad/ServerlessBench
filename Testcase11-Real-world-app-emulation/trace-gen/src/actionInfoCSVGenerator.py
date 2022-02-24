@@ -92,9 +92,11 @@ def sampleActionCSVGen(chainLenSampleList):
 
         # Create functions in the app
         for functionID in range(length):
-            funcName = "func%d-%d" %(sequenceID, functionID)
+            funcName = "func%s-%s" %(str(sequenceID).zfill(3), str(functionID).zfill(3))
             mem = pickRandMem()
             execTime = pickRandExecTime()
+            if execTime == 0:
+                execTime = 1
             outfile.write("%s,%s,%d,%d\n" % (appName, funcName, mem, execTime))
 
         print("app%d creation complete" % sequenceID)

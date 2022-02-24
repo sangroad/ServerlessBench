@@ -29,7 +29,7 @@
 
 function main(params) {
 	// execTime = params.execTime
-	let time = 1;
+	let time = 50;
 	let one_base = 35000;
 	let iter = 1 * time;
 	let hrStart = process.hrtime();
@@ -43,7 +43,7 @@ function main(params) {
 	let stTime = hrStart[0] * 1000000 + hrStart[1] / 1000
 	let edTime = hrEnd[0] * 1000000 + hrEnd[1] / 1000
 
-	console.log(edTime - stTime);	// in us
+	console.log((edTime - stTime)/1000);	// in us
 
 	// let hrEnd = process.hrtime();
 	// let edTime = hrEnd[0] * 1000000 + hrEnd[1] / 1000
