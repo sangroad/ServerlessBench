@@ -24,5 +24,5 @@ def main(args):
 
 # for debug
 if __name__ == '__main__':
-	main({ 'execTime' : 50 })
+	main({ 'execTime' : 1000 })
 	# main({ 'runTime' : 0 })
