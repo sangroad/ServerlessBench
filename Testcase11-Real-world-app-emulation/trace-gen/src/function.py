@@ -2,8 +2,9 @@ import time
 
 def loop(count):
 	for i in range(0, count):
+		#for j in range(0, 42000):
 		#for j in range(0, 48000):
-		for j in range(0, 50000):
+		for j in range(0, 57000):
 			pass
 
 
@@ -24,5 +25,5 @@ def main(args):
 
 # for debug
 if __name__ == '__main__':
-	main({ 'execTime' : 1000 })
+	main({ 'execTime' : 100 })
 	# main({ 'runTime' : 0 })
