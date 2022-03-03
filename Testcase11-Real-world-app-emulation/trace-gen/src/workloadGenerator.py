@@ -1,5 +1,4 @@
 import os
-from numpy import full
 import yaml
 
 config = yaml.load(open(os.path.join(os.path.dirname(__file__),'config.yaml')), yaml.FullLoader)
@@ -33,10 +32,6 @@ def refractorAppComputeInfo():
 # exec time: ms scale
 # specify execTime in update phase
 def actionWskGen(chainList):
-	'''
-	quotaWeight = 600000.0 / 10240.0
-	fullQuota = 100000
-	'''
 
 	for key, val in chainList.items():
 		appName = key
@@ -48,17 +43,10 @@ def actionWskGen(chainList):
 			mem = info[0]
 			execTime = info[1]
 
-			'''
-			if int(execTime) > 6:
-				cpuQuota = int(mem) * quotaWeight
-				quotaRatio = round(fullQuota / cpuQuota)	# quota 비율만큼 exec time을 조절한다
-				execTime = round(int(execTime) / quotaRatio)
-			'''
-
 			if int(mem) < 128:
-				mem = '128'
+				mem = "128"
 			if int(mem) > 512:
-				mem = '512'
+				mem = "512"
 
 			# cmd = "./action_update.sh %s %s %s %s" % (sequenceID, functionID, execTime, mem)
 			cmd = "./action_update.sh %s %s %s %s" % (str(sequenceID).zfill(3), str(functionID).zfill(3), execTime, mem)
