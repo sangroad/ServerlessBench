@@ -62,6 +62,11 @@ def actionWskGen(chainList):
 		print(cmd)
 		r = os.popen(cmd)
 		r.read()
+
+	# func------- means the end of benchmark
+	cmd = "./action_update.sh %s %s %s %s" % ("---", "---", 1, 128)
+	r = os.popen(cmd)
+	r.read()
 	
 	print("Workload creation complete")
 

@@ -37,8 +37,8 @@ def sampleActionIATCSVGen(appNum):
     outfile.write("IAT\n")
 
     for i in range(appNum):
-        IAT = pickRandAvgIAT()
-        outfile.write("%0.3f\n" % (IAT))
+        IAT = round(pickRandAvgIAT())
+        outfile.write("%d\n" % (IAT))
 
 if __name__ == '__main__':
     sampleActionIATCSVGen(SAMPLE_NUM)
