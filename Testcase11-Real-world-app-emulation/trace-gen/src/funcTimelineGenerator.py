@@ -86,7 +86,17 @@ def mapActionandIAT():
     actionFile.close()
     IATFile.close()
 
-    return actionIATdict
+    return (actionIATdict, appExecTime)
+
+def writeMappingCSV(actionDict, appExecTime):
+    appAndIATMapFileName = "%s/appandIATMap.csv" % workloadDir
+    outfile = open(appAndIATMapFileName, "w")
+    outfile.write("appName,IAT,execTime\n")
+
+    for key, value in actionDict.items():
+        outfile.write("%s,%s,%s\n" % (key, value, appExecTime[key]))
+
+    outfile.close()
 
 
 def invokeTimelineGen(actionDict):
@@ -151,5 +161,6 @@ def invokeTimelineGenOld(actionDict):
     df.to_csv(timelineFileName, mode="w")
 
 if __name__ == '__main__':
-    actionIATdict = mapActionandIAT()
-    invokeTimelineGen(actionIATdict)
+    actionIATdict, appExecTime = mapActionandIAT()
+    writeMappingCSV(actionIATdict, appExecTime)
+    # invokeTimelineGen(actionIATdict)
