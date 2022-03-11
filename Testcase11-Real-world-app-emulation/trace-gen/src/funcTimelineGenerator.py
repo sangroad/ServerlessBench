@@ -163,4 +163,4 @@ def invokeTimelineGenOld(actionDict):
 if __name__ == '__main__':
     actionIATdict, appExecTime = mapActionandIAT()
     writeMappingCSV(actionIATdict, appExecTime)
-    # invokeTimelineGen(actionIATdict)
+    invokeTimelineGen(actionIATdict)

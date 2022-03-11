@@ -1,10 +1,6 @@
 #!/bin/bash
-
-python3 actionInfoCSVGenerator.py
-python3 IATCSVGenerator.py
-python3 funcTimelineGenerator.py
-#python3 generateActionIATMapping.py
-python3 workloadGenerator.py
+./generate_functions.sh
+./ow_reg_functions.sh
 
 make clean
 make

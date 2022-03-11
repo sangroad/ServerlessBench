@@ -1,5 +1,5 @@
 # The number of apps
-sample_number: 50
+sample_number: 40
 
 # The file that stores the output information
 result_file: "invokeResult.csv"

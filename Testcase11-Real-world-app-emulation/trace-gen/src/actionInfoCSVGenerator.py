@@ -79,6 +79,7 @@ def sampleActionCSVGen(chainLenSampleList):
     sampleNum = len(chainLenSampleList)
     outfile = open("%s/appComputeInfo.csv" % workloadDir, "w")
     outfile.write("AppName,FunctionName,MemReq,ExecTime\n")
+    totalFuncNum = 0
 
     print("Number of applications: %d" % sampleNum)
     for sequenceID in range(sampleNum):
@@ -98,8 +99,11 @@ def sampleActionCSVGen(chainLenSampleList):
             if execTime == 0:
                 execTime = 1
             outfile.write("%s,%s,%d,%d\n" % (appName, funcName, mem, execTime))
+            totalFuncNum += 1
 
         print("app%d creation complete" % sequenceID)
+    
+    print("Number of functions: %d" % totalFuncNum)
 
     outfile.close()
     return
