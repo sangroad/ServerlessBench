@@ -2,7 +2,7 @@ CC=g++
 CXXFLAGS=-Wall
 INCLUDES=
 LDFLAGS=
-LIBS=-lyaml-cpp
+LIBS=-lyaml-cpp -pthread
 
 SRCS=runWorkload.cpp
 OBJS=$(SRCS:.cpp=.o)

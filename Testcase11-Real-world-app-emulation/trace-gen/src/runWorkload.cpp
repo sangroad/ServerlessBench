@@ -5,6 +5,7 @@
 #include <chrono>
 #include <vector>
 #include <sstream>
+#include <future>
 #include <thread>
 using namespace std;
 using clock_type = std::chrono::high_resolution_clock;
@@ -25,37 +26,55 @@ vector<int> split(string input, string match, char delim) {
 	return result;
 }
 
-int run_workload(string timeline_path) {
-	ios::sync_with_stdio(false);
+int print_result(FILE* sh) {
+	char line[10240];
 
+	if (fgets(line, 10240, sh) != NULL) {
+		printf("%s", line);
+		return 1;
+	}
+	else {
+		return 0;
+	}
+}
+
+int run_workload(string timeline_path) {
 	ifstream timeline_file(timeline_path);
 	string line;
-	string cmd;
+	// string cmd;
 	vector<int> run_idx;
+	std::future<int> fut;
 
 	if (!timeline_file.is_open()) {
 		return -1;
 	}
+
+	// auto prev_time = clock_type::now();
 
 	while(getline(timeline_file, line)) {
 		auto start_time = clock_type::now();
 		auto target_time = start_time + 1ms;
 
 		if (line.find("1") != string::npos) {
-			FILE *shell = NULL;
+			// FILE *shell = NULL;
+			string cmd = "";
 			run_idx = split(line, "1", ',');
+
 			for (int idx : run_idx) {
 				// cmd = "wsk -i action invoke app" + to_string(idx) + " &";
-				cmd = "wsk -i action invoke app" + to_string(idx);
-				shell = popen(cmd.c_str(), "r");
-				cout << cmd << endl;
+				cmd += "wsk -i action invoke app" + to_string(idx) + " > req_response;";
 			}
+			popen(cmd.c_str(), "r");
+			// fut = std::async(std::launch::async, print_result, shell);
 
 			auto end_time = clock_type::now();
 			// cout << chrono::duration_cast<chrono::microseconds>(end_time - start_time).count() << "us\n";
+			printf("duration: %ld\n", chrono::duration_cast<chrono::microseconds>(end_time - start_time).count());
 		}
 
 		this_thread::sleep_until(target_time);
+		// prev_time = clock_type::now();
+		// printf("while duration: %ld\n", chrono::duration_cast<chrono::microseconds>(prev_time - start_time).count());
 	}
 
 	return 0;
@@ -69,15 +88,6 @@ int main() {
 	const string timeline_path = workload_dir + "/funcTimeline_" + SAMPLE_NUM + ".csv";
 
 	run_workload(timeline_path);
-
-	// auto start_time = clock_type::now();
-
-	// FILE *ls = popen("wsk -i action invoke app0", "r");
-
-	// auto end_time = clock_type::now();
-	// cout << chrono::duration_cast<chrono::microseconds>(end_time - start_time).count() << endl;
-
-	// pclose(ls);
 	
 	return 0;
 }
