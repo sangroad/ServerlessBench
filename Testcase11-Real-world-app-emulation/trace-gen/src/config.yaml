@@ -1,11 +1,11 @@
 # The number of apps
-sample_number: 40
+sample_number: 230
 
 # The file that stores the output information
 result_file: "invokeResult.csv"
 
 # The total time for testing in seconds
-total_run_time: 600
+total_run_time: 3600
 
 # If true, RealWorldAppEmulation.py will automatically generate random samples
 # We suggest that generate the samples manually or automatically generate samples only once

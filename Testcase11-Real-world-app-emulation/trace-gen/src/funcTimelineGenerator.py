@@ -26,20 +26,29 @@ def calAppExecTime(appList):
     appExecTime = 0
     prev = ""
     ret = {}
+    funcPerApp = {}
+    funcPerAppCnt = 0
 
     for val in appList:
         splitted = val.split(",")
         appName = splitted[0]
         execTime = splitted[3]
-        appExecTime += int(execTime)
+
+        if prev == "":
+            prev = appName
+
         if appName == prev:
-            continue
+            appExecTime += int(execTime)
+            funcPerAppCnt += 1
+        else:
+            prev = appName
+            appExecTime = int(execTime)
+            funcPerAppCnt = 1
+
         ret[appName] = appExecTime
+        funcPerApp[appName] = funcPerAppCnt
 
-        prev = appName
-        appExecTime = 0
-
-    return ret
+    return (ret, funcPerApp)
 
 # Generate mapping between app and IAT
 def mapActionandIAT():
@@ -57,7 +66,7 @@ def mapActionandIAT():
         IATLines[idx] = round(float(line[:-1]))
 
     IATLines.sort()
-    appExecTime = calAppExecTime(actionLines)
+    appExecTime, funcsPerApp = calAppExecTime(actionLines)
     possibleApps = {}   # key: IAT, value: list of map-able apps
     IATcnt = {}    # key: IAT, value: count
 
@@ -86,15 +95,15 @@ def mapActionandIAT():
     actionFile.close()
     IATFile.close()
 
-    return (actionIATdict, appExecTime)
+    return (actionIATdict, appExecTime, funcsPerApp)
 
-def writeMappingCSV(actionDict, appExecTime):
+def writeMappingCSV(actionDict, appExecTime, funcPerApp):
     appAndIATMapFileName = "%s/appandIATMap.csv" % workloadDir
     outfile = open(appAndIATMapFileName, "w")
-    outfile.write("appName,IAT,execTime\n")
+    outfile.write("appName,IAT,execTime,functionsPerApp\n")
 
     for key, value in actionDict.items():
-        outfile.write("%s,%s,%s\n" % (key, value, appExecTime[key]))
+        outfile.write("%s,%s,%s,%s\n" % (key, value, appExecTime[key], funcsPerApp[key]))
 
     outfile.close()
 
@@ -161,6 +170,6 @@ def invokeTimelineGenOld(actionDict):
     df.to_csv(timelineFileName, mode="w")
 
 if __name__ == '__main__':
-    actionIATdict, appExecTime = mapActionandIAT()
-    writeMappingCSV(actionIATdict, appExecTime)
+    actionIATdict, appExecTime, funcsPerApp = mapActionandIAT()
+    writeMappingCSV(actionIATdict, appExecTime, funcsPerApp)
     invokeTimelineGen(actionIATdict)

@@ -7,8 +7,14 @@
 #include <sstream>
 #include <future>
 #include <thread>
+#include <cstdlib>
+#include <cerrno>
+#include <cstring>
 using namespace std;
 using clock_type = std::chrono::high_resolution_clock;
+
+// key: app name, value: number of app activation
+map<string, int> activ_cnt;
 
 vector<string> split(string input, char delim) {
 	vector<string> result;
@@ -67,7 +73,14 @@ map<int, string> parse_app_order(string timeline_path) {
 	}
 
 	return res;
-} 
+}
+
+void clear_openfiles(vector<FILE*> *v) {
+	for (auto item : *v) {
+		pclose(item);
+	}
+	v->clear();
+}
 
 int run_workload(string timeline_path, const string res_file) {
 	ifstream timeline_file(timeline_path);
@@ -75,12 +88,16 @@ int run_workload(string timeline_path, const string res_file) {
 	string prev_res;
 	vector<int> run_idx;
 	map<int, string> app_idx = parse_app_order(timeline_path);
-	// std::future<int> fut;
 	unsigned int inv_cnt = 0;
 	int while_iter = 0;
+	vector<FILE*> sh_arr;
 
 	if (!timeline_file.is_open()) {
 		return -1;
+	}
+
+	for (const auto &item : app_idx) {
+		activ_cnt[item.second] = 0;
 	}
 
 	// auto prev_time = clock_type::now();
@@ -88,38 +105,54 @@ int run_workload(string timeline_path, const string res_file) {
 
 	while(getline(timeline_file, line)) {
 		while_iter++;
+		FILE *sh = NULL;
 		auto start_time = clock_type::now();
 		auto target_time = start_time + 1ms;
 
 		if (line.find("1") != string::npos) {
-			// FILE *shell = NULL;
-			string cmd = "";
+			string cmd;
 			run_idx = split_and_match(line, "1", ',');
 
 			for (int idx : run_idx) {
-				cmd += "wsk -i action invoke " + app_idx[idx] + " > " + res_file + ";";
+				string tmp_app_name = app_idx[idx];
+				cmd = "wsk -i action invoke " + tmp_app_name + " > " + res_file;
+				sh = popen(cmd.c_str(), "r");
+				activ_cnt[tmp_app_name]++;
+				// printf("cmd: %s\n", cmd.c_str());
+				if (sh == NULL) {
+					printf("err number: %d, errr str: %s\n", errno, strerror(errno));
+				}
+				sh_arr.push_back(sh);
 				// cmd += "wsk -i action invoke app" + to_string(idx) + " > " + res_file + ";";
 			}
-			popen(cmd.c_str(), "r");
 			inv_cnt++;
+
+			if (inv_cnt % 30 == 0) {
+				auto end_time = clock_type::now();
+				printf("duration: %ld\n", chrono::duration_cast<chrono::microseconds>(end_time - start_time).count());
+			}
 
 			if (inv_cnt % 50 == 0) {
 				ifstream temp_file(res_file);
 				string temp_str;
 				getline(temp_file, temp_str);
 				if (prev_res == temp_str) {
-					printf("There is an delay in function execution!\n");
-					// return -1;
+					printf("Delay on function execution!\n");
 				}
 				else {
 					prev_res = temp_str;
-					printf("%s\n", temp_str.c_str());
 				}
+				auto end_time = clock_type::now();
+				printf("After result file check duration: %ld\n", chrono::duration_cast<chrono::microseconds>(end_time - start_time).count());
 			}
-			// fut = std::async(std::launch::async, print_result, shell);
 
-			// auto end_time = clock_type::now();
-			// printf("duration: %ld\n", chrono::duration_cast<chrono::microseconds>(end_time - start_time).count());
+			if (inv_cnt % 200 == 0) {
+				// close opened files asynchronously
+				future<void> fut = async(launch::async, clear_openfiles, &sh_arr);
+				auto end_time = clock_type::now();
+				printf("After clear opened file duration: %ld\n", chrono::duration_cast<chrono::microseconds>(end_time - start_time).count());
+			}
+
 		}
 
 		this_thread::sleep_until(target_time);
@@ -128,17 +161,43 @@ int run_workload(string timeline_path, const string res_file) {
 	}
 
 	printf("workload end!\n");
-	printf("total while iterations: %d\n", inv_cnt);
-	printf("total app invocations: %d\n", inv_cnt);
+	// printf("total app invocations: %d\n", inv_cnt);
 
 	string cmd = "wsk -i action invoke func-------";
 	popen(cmd.c_str(), "r");
 
 	return inv_cnt;
-
 }
 
-void move_success_workload(string workload_dir, string success_dir, string sample_num) {
+void print_total_invocation(string path, int64_t duration) {
+	string app_compute_info = path + "/appandIATMap.csv";
+	map<string, int> functions_per_app;
+	ifstream file(app_compute_info);
+	string line;
+	int total_activations = 0;
+
+	getline(file, line);
+
+	while (getline(file, line)) {
+		vector<string> tmp = split(line, ',');
+		string appName = tmp[0];
+		int funcs_cnt = stoi(tmp[3]);
+		functions_per_app[appName] = funcs_cnt;
+	}
+
+	for (const auto &item : activ_cnt) {
+		int tmp = item.second * functions_per_app[item.first];
+		printf("app: %s, functions for app: %d, app activations: %d, functions activations: %d\n", 
+			item.first.c_str(), functions_per_app[item.first], item.second, tmp);
+		total_activations += tmp;
+	}
+
+	double rps = total_activations / duration;
+	printf("total function invocations: %d\n", total_activations);
+	printf("rps: %lf\n", rps);
+}
+
+void move_success_workload(string workload_dir, string success_dir, string sample_num, string runtime) {
 	string map_file_path = workload_dir + "/appandIATMap.csv";
 	ifstream map_file(map_file_path);
 	string line;
@@ -158,8 +217,8 @@ void move_success_workload(string workload_dir, string success_dir, string sampl
 	}
 	app_info_file.close();
 
-	// new dir: number of applicaitons + shortest IAT + number of functions
-	string new_dir = sample_num + "_" + IAT + "_" + to_string(func_cnt);
+	// new dir: number of applicaitons + shortest IAT + number of functions + execution time
+	string new_dir = sample_num + "_" + IAT + "_" + to_string(func_cnt) + "_" + runtime;
 	string cmd = "cp -r " + workload_dir + " " + success_dir + new_dir;
 	cout << cmd << endl;
 	popen(cmd.c_str(), "r");
@@ -168,6 +227,7 @@ void move_success_workload(string workload_dir, string success_dir, string sampl
 int main() {
 	YAML::Node config = YAML::LoadFile("config.yaml");
 	const string SAMPLE_NUM = config["sample_number"].as<string>();
+	const string RUNTIME = config["total_run_time"].as<string>();
 	const string workload_dir = "../CSVs/" + SAMPLE_NUM;
 	const string success_dir = "../CSVs/success/";
 	const string timeline_path = workload_dir + "/funcTimeline_" + SAMPLE_NUM + ".csv";
@@ -178,12 +238,15 @@ int main() {
 	auto start_time = clock_type::now();
 	int ret = run_workload(timeline_path, res_file);
 	auto end_time = clock_type::now();
+	auto duration = chrono::duration_cast<chrono::seconds>(end_time - start_time).count();
+
+	print_total_invocation(workload_dir, duration);
 
 	if (ret != -1) {
-		move_success_workload(workload_dir, success_dir, SAMPLE_NUM);
+		move_success_workload(workload_dir, success_dir, SAMPLE_NUM, RUNTIME);
 	}
 
-	printf("workload duration: %ld\n", chrono::duration_cast<chrono::milliseconds>(end_time - start_time).count());
+	printf("workload duration: %ld\n", duration);
 	
 	return 0;
 }
