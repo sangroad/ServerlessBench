@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include <map>
 #include <chrono>
 #include <vector>
 #include <sstream>
@@ -238,13 +238,23 @@ void write_success_workload_to_pickme(string success_path, string pickme_path) {
 	printf("Writing current workload to pickme done\n");
 }
 
-int main() {
-	YAML::Node config = YAML::LoadFile("config.yaml");
-	const string SAMPLE_NUM = config["sample_number"].as<string>();
-	const string RUNTIME = config["total_run_time"].as<string>();
-	const string workload_dir = "../CSVs/" + SAMPLE_NUM;
-	const string success_dir = "../CSVs/success/";
-	const string timeline_path = workload_dir + "/funcTimeline_" + SAMPLE_NUM + ".csv";
+void print_usage() {
+	printf("./run_success <workload name to run>\n");
+}
+
+int main(int argc, char *argv[]) {
+
+	if (argc == 1) {
+		print_usage();
+		return 0;
+	}
+
+	auto tmp = split(argv[1], '_');
+	const string SAMPLE_NUM = tmp[0];
+	const string RUNTIME = tmp[3];
+
+	const string success_dir = "../CSVs/success/" + string(argv[1]);
+	const string timeline_path = success_dir + "/funcTimeline_" + SAMPLE_NUM + ".csv";
 	const string res_file = "req_response";
 	const string pickme_data_path = "/home/caslab/workspace/PICKME/data";
 	string success_path;
@@ -254,11 +264,9 @@ int main() {
 	auto end_time = clock_type::now();
 	auto duration = chrono::duration_cast<chrono::seconds>(end_time - start_time).count();
 
-	print_total_invocation(workload_dir, duration);
+	print_total_invocation(success_dir, duration);
 
 	if (ret != -1) {
-		success_path = move_success_workload(workload_dir, success_dir, SAMPLE_NUM, RUNTIME);
-		cout << success_path << endl;
 		write_success_workload_to_pickme(success_path, pickme_data_path);
 	}
 
@@ -266,3 +274,4 @@ int main() {
 	
 	return 0;
 }
+
