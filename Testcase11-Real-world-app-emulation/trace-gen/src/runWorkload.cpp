@@ -115,7 +115,7 @@ int run_workload(string timeline_path, const string res_file) {
 
 			for (int idx : run_idx) {
 				string tmp_app_name = app_idx[idx];
-				cmd = "wsk -i action invoke " + tmp_app_name + " > " + res_file;
+				cmd = "wsk -i action invoke " + tmp_app_name + " > " + res_file + " &";
 				sh = popen(cmd.c_str(), "r");
 				activ_cnt[tmp_app_name]++;
 				// printf("cmd: %s\n", cmd.c_str());
@@ -132,11 +132,16 @@ int run_workload(string timeline_path, const string res_file) {
 				printf("duration: %ld\n", chrono::duration_cast<chrono::microseconds>(end_time - start_time).count());
 			}
 
-			if (inv_cnt % 50 == 0) {
+			if (inv_cnt % 100 == 0) {
 				ifstream temp_file(res_file);
 				string temp_str;
 				getline(temp_file, temp_str);
-				if (prev_res == temp_str) {
+
+				if (temp_str.find("error:") != string::npos) {
+					printf("Openwhisk cannot invoke function!!\n Exit...\n");
+					return -1;
+				}
+				else if (prev_res == temp_str) {
 					printf("Delay on function execution!\n");
 				}
 				else {
@@ -151,6 +156,7 @@ int run_workload(string timeline_path, const string res_file) {
 				future<void> fut = async(launch::async, clear_openfiles, &sh_arr);
 				auto end_time = clock_type::now();
 				printf("After clear opened file duration: %ld\n", chrono::duration_cast<chrono::microseconds>(end_time - start_time).count());
+				printf("Executed functions: %d\n", inv_cnt);
 			}
 
 		}
@@ -164,7 +170,14 @@ int run_workload(string timeline_path, const string res_file) {
 	// printf("total app invocations: %d\n", inv_cnt);
 
 	string cmd = "wsk -i action invoke func-------";
-	popen(cmd.c_str(), "r");
+	FILE* sh = popen(cmd.c_str(), "r");
+	char tmp[10240];
+	fgets(tmp, 10240, sh);
+
+	if (string(tmp).find("error:") != string::npos) {
+		printf("Openwhisk is now unavailable!\n");
+		return -1;
+	}
 
 	return inv_cnt;
 }
@@ -197,7 +210,7 @@ void print_total_invocation(string path, int64_t duration) {
 	printf("rps: %lf\n", rps);
 }
 
-string move_success_workload(string workload_dir, string success_dir, string sample_num, string runtime) {
+string move_workload(string workload_dir, string target_dir, string sample_num, string runtime) {
 	string map_file_path = workload_dir + "/appandIATMap.csv";
 	ifstream map_file(map_file_path);
 	string line;
@@ -219,7 +232,7 @@ string move_success_workload(string workload_dir, string success_dir, string sam
 
 	// new dir: number of applicaitons + shortest IAT + number of functions + execution time
 	string new_dir = sample_num + "_" + IAT + "_" + to_string(func_cnt) + "_" + runtime;
-	string cmd = "cp -r " + workload_dir + " " + success_dir + new_dir;
+	string cmd = "cp -r " + workload_dir + " " + target_dir + new_dir;
 	cout << cmd << endl;
 	popen(cmd.c_str(), "r");
 
@@ -244,10 +257,10 @@ int main() {
 	const string RUNTIME = config["total_run_time"].as<string>();
 	const string workload_dir = "../CSVs/" + SAMPLE_NUM;
 	const string success_dir = "../CSVs/success/";
+	const string fail_dir = "../CSVs/fail/";
 	const string timeline_path = workload_dir + "/funcTimeline_" + SAMPLE_NUM + ".csv";
 	const string res_file = "req_response";
 	const string pickme_data_path = "/home/caslab/workspace/PICKME/data";
-	string success_path;
 
 	auto start_time = clock_type::now();
 	int ret = run_workload(timeline_path, res_file);
@@ -256,13 +269,17 @@ int main() {
 
 	print_total_invocation(workload_dir, duration);
 
-	if (ret != -1) {
-		success_path = move_success_workload(workload_dir, success_dir, SAMPLE_NUM, RUNTIME);
-		cout << success_path << endl;
+	// erroneous workload
+	if (ret == -1) {
+		move_workload(workload_dir, fail_dir, SAMPLE_NUM, RUNTIME);
+	}
+	else {	// successful workload
+		string success_path = move_workload(workload_dir, success_dir, SAMPLE_NUM, RUNTIME);
+		printf("%s\n", success_path.c_str());
 		write_success_workload_to_pickme(success_path, pickme_data_path);
 	}
 
 	printf("workload duration: %ld\n", duration);
-	
+
 	return 0;
 }

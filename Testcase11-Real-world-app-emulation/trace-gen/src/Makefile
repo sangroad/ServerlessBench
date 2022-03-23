@@ -19,7 +19,7 @@ debug: CXXFLAGS=-Wall -g -DDEBUG -fsanitize=address
 debug: LDFLAGS=-fsanitize=address
 debug: $(PROG)
 
-success: CXXFLAGS=-Wall -g -DDEBUG -fsanitize=address
+success: CXXFLAGS=-Wall
 success: $(SUC_PROG)
 
 .cpp.o:
@@ -32,4 +32,4 @@ $(SUC_PROG): $(SUC_OBJS)
 	$(CC) $(CXXFLAGS) $(INCLUDES) -o $@ $(SUC_OBJS) $(LDFLAGS) $(SUC_LIBS)
 
 clean:
-	$(RM) *.o *~ $(PROG)
+	$(RM) *.o *~ $(PROG) $(SUC_PROG)

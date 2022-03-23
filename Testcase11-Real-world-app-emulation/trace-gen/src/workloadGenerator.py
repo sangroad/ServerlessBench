@@ -1,12 +1,13 @@
 import os
 import yaml
+import sys
 
 config = yaml.load(open(os.path.join(os.path.dirname(__file__),'config.yaml')), yaml.FullLoader)
 SAMPLE_NUM = config['sample_number']
-workloadDir = "../CSVs/%i" % SAMPLE_NUM
-computeInfoFile = "%s/appComputeInfo.csv" % workloadDir
+# workloadDir = "../CSVs/%i" % SAMPLE_NUM
+# computeInfoFile = "%s/appComputeInfo.csv" % workloadDir
 
-def refractorAppComputeInfo():
+def refractorAppComputeInfo(computeInfoFile):
 	infoFile = open(computeInfoFile, "r")
 	computeInfo = infoFile.readlines()[1:]
 	prevName = None
@@ -72,5 +73,14 @@ def actionWskGen(chainList):
 
 
 if __name__ == '__main__':
-	seqInfo = refractorAppComputeInfo()
+	argument = sys.argv
+	del argument[0]
+
+	if len(argument) > 0:
+		workloadDir = "../CSVs/success/%s" % argument[0]
+	else:
+		workloadDir = "../CSVs/%i" % SAMPLE_NUM
+
+	computeInfoFile = "%s/appComputeInfo.csv" % workloadDir
+	seqInfo = refractorAppComputeInfo(computeInfoFile)
 	actionWskGen(seqInfo)
