@@ -1,11 +1,12 @@
 import os
+from tabnanny import check
 import yaml
 import sys
+import pandas as pd
+import numpy as np
 
 config = yaml.load(open(os.path.join(os.path.dirname(__file__),'config.yaml')), yaml.FullLoader)
 SAMPLE_NUM = config['sample_number']
-# workloadDir = "../CSVs/%i" % SAMPLE_NUM
-# computeInfoFile = "%s/appComputeInfo.csv" % workloadDir
 
 def refractorAppComputeInfo(computeInfoFile):
 	infoFile = open(computeInfoFile, "r")
@@ -32,7 +33,7 @@ def refractorAppComputeInfo(computeInfoFile):
 
 # exec time: ms scale
 # specify execTime in update phase
-def actionWskGen(chainList):
+def actionWskGen(chainList, th):
 
 	for key, val in chainList.items():
 		appName = key
@@ -42,7 +43,10 @@ def actionWskGen(chainList):
 
 		for info in val:
 			mem = info[0]
-			execTime = info[1]
+			if th == None:
+				execTime = info[1]
+			else:
+				execTime = th
 
 			if int(mem) < 128:
 				mem = "128"
@@ -68,19 +72,35 @@ def actionWskGen(chainList):
 	cmd = "./action_update.sh %s %s %s %s" % ("---", "---", 1, 128)
 	r = os.popen(cmd)
 	r.read()
-	
+
 	print("Workload creation complete")
+
+def checkThOK(path, th):
+	mapFile = pd.read_csv(path)
+	newExecTime = mapFile["functionsPerApp"].multiply(th)
+
+	return np.all(mapFile["IAT"].astype(int) > newExecTime)
 
 
 if __name__ == '__main__':
+	th = None
 	argument = sys.argv
 	del argument[0]
 
-	if len(argument) > 0:
+	if len(argument) == 1:
 		workloadDir = "../CSVs/success/%s" % argument[0]
+	elif len(argument) == 2:
+		workloadDir = "../CSVs/success/%s" % argument[0]
+		mapInfoFile = "%s/appandIATMap.csv" % workloadDir
+		th = int(argument[1])
+		isFine = checkThOK(mapInfoFile, th)
+		if isFine == False:
+			print("Threshold is not fit!")
+			sys.exit(1)
 	else:
 		workloadDir = "../CSVs/%i" % SAMPLE_NUM
 
 	computeInfoFile = "%s/appComputeInfo.csv" % workloadDir
+
 	seqInfo = refractorAppComputeInfo(computeInfoFile)
-	actionWskGen(seqInfo)
+	actionWskGen(seqInfo, th)
