@@ -56,7 +56,7 @@ def calAppExecTime(appList):
 def mapActionandIAT(path):
 	actionFileName = "%s/appComputeInfo.csv" % path
 	IATFileName = "%s/possibleIATs.csv" % path
-	actionIATdict = {}
+	actionIATdict = {}	# key: action name, value: IAT
 
 	actionFile = open(actionFileName, "r")
 	IATFile = open(IATFileName, "r")
@@ -96,6 +96,12 @@ def mapActionandIAT(path):
 	print("App and IAT mapping done!")
 	actionFile.close()
 	IATFile.close()
+
+	rps = 0
+	for _, iat in actionIATdict.items():
+		rps += MILLISECONDS_PER_SEC / iat
+
+	print("Workload's estimated RPS: %d" % rps)
 
 	return (actionIATdict, appExecTime, funcsPerApp)
 
@@ -172,14 +178,15 @@ def invokeTimelineGenOld(actionDict):
 
 # argument: name of successful workload
 if __name__ == '__main__':
-	argument = sys.argv
-	del argument[0]
+	# argument = sys.argv
+	# del argument[0]
 
-	if len(argument) > 0:
-		baseDir = "%s/%s" % (successDir, argument[0])
-		mapActionandIAT(baseDir)
-	else:
-		actionIATdict, appExecTime, funcsPerApp = mapActionandIAT(workloadDir)
+	# if len(argument) > 0:
+	# 	baseDir = "%s/%s" % (successDir, argument[0])
+	# 	mapActionandIAT(baseDir)
+	# else:
+		# actionIATdict, appExecTime, funcsPerApp = mapActionandIAT(workloadDir)
 
+	actionIATdict, appExecTime, funcsPerApp = mapActionandIAT(workloadDir)
 	writeMappingCSV(actionIATdict, appExecTime, funcsPerApp)
 	invokeTimelineGen(actionIATdict)
