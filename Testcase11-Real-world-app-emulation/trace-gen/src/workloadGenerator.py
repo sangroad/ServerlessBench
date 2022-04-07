@@ -88,8 +88,13 @@ if __name__ == '__main__':
 	del argument[0]
 
 	if len(argument) == 1:
-		workloadDir = "../CSVs/success/%s" % argument[0]
-	elif len(argument) == 2:
+		# run successful workload
+		if "_" in argument[0]:
+			workloadDir = "../CSVs/success/%s" % argument[0]
+		else:	# run new workload with same function runtime
+			workloadDir = "../CSVs/%i" % SAMPLE_NUM
+			th = int(argument[0])
+	elif len(argument) == 2:	# run successful workload with same function runtime
 		workloadDir = "../CSVs/success/%s" % argument[0]
 		mapInfoFile = "%s/appandIATMap.csv" % workloadDir
 		th = int(argument[1])

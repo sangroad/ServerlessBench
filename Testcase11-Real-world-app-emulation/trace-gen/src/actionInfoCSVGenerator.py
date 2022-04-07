@@ -13,6 +13,7 @@ import random
 import os
 import yaml
 import utils
+import sys
 
 SECONDS_OF_A_DAY = 3600*24
 MILLISECONDS_PER_SEC = 1000
@@ -22,128 +23,103 @@ SAMPLE_NUM = config['sample_number']
 workloadDir = "../CSVs/%i" % SAMPLE_NUM
 
 def genWorkloadDir(sampleNum):
-    try:
-        if not os.path.exists(sampleNum):
-            os.makedirs(workloadDir)
-    except OSError:
-        print("Error: Creating directiry %s" % workloadDir)
+	try:
+		if not os.path.exists(sampleNum):
+			os.makedirs(workloadDir)
+	except OSError:
+		print("Error: Creating directiry %s" % workloadDir)
 
 # Generate a list of length according to the CDF of the chain length in an app,
 # each of which represents the chain length of an application
 def chainLenSampleListGen(sampleNum):
-    CDF = parseChainLenCDFFile()
-    lengthList = CDF[0]
-    CDFdict = CDF[1]
+	CDF = parseChainLenCDFFile()
+	lengthList = CDF[0]
+	CDFdict = CDF[1]
 
-    sampleList = []
-    for i in range(sampleNum):
-        randF = random.random()
-        for length in lengthList:
-            if CDFdict[length] > randF:
-                sampleList.append(length)
-                break
-    return sampleList
+	sampleList = []
+	for i in range(sampleNum):
+		randF = random.random()
+		for length in lengthList:
+			if CDFdict[length] > randF:
+				sampleList.append(length)
+				break
+	return sampleList
 
 # parse the CDF file, return the list of each x (x is length in the CDF),
 # and the dictionary of x:F(x)
 def parseChainLenCDFFile():
-    filename = os.path.join(os.path.dirname(__file__),'../CSVs/chainlenCDF.csv')
-    f = open(filename, 'r')
-    f.readline()
-    lengthList = []
-    CDFdict = {}
-    for line in f:
-        lineSplit = line.split(',')
-        length = int(lineSplit[0])
-        Fx = float(lineSplit[1])
-        lengthList.append(length)
-        CDFdict[length] = Fx
+	filename = os.path.join(os.path.dirname(__file__),'../CSVs/chainlenCDF.csv')
+	f = open(filename, 'r')
+	f.readline()
+	lengthList = []
+	CDFdict = {}
+	for line in f:
+		lineSplit = line.split(',')
+		length = int(lineSplit[0])
+		Fx = float(lineSplit[1])
+		lengthList.append(length)
+		CDFdict[length] = Fx
 
-    return (lengthList, CDFdict)
+	return (lengthList, CDFdict)
 
 def pickRandExecTime():
-    filename = os.path.join(os.path.dirname(__file__),'../CSVs/execTimeCDF.csv')
-    randExecTime = utils.getRandValueRefByCDF(filename)
-    return randExecTime
+	filename = os.path.join(os.path.dirname(__file__),'../CSVs/execTimeCDF.csv')
+	randExecTime = utils.getRandValueRefByCDF(filename)
+	return randExecTime
 
 def pickRandMem():
-    filename = os.path.join(os.path.dirname(__file__),'../CSVs/memCDF.csv')
-    # Use bias in original code
-    # bias = 30
-    randMem = utils.getRandValueRefByCDF(filename)
-    return randMem
+	filename = os.path.join(os.path.dirname(__file__),'../CSVs/memCDF.csv')
+	# Use bias in original code
+	# bias = 30
+	randMem = utils.getRandValueRefByCDF(filename)
+	return randMem
 
 # Generate the csv file to make the samples for OpenWhisk
 # csv file contains: application ID, function ID, execution time, mem requirement
-def sampleActionCSVGen(chainLenSampleList):
-    sampleNum = len(chainLenSampleList)
-    outfile = open("%s/appComputeInfo.csv" % workloadDir, "w")
-    outfile.write("AppName,FunctionName,MemReq,ExecTime\n")
-    totalFuncNum = 0
+def sampleActionCSVGen(chainLenSampleList, th):
+	sampleNum = len(chainLenSampleList)
+	outfile = open("%s/appComputeInfo.csv" % workloadDir, "w")
+	outfile.write("AppName,FunctionName,MemReq,ExecTime\n")
+	totalFuncNum = 0
 
-    print("Number of applications: %d" % sampleNum)
-    for sequenceID in range(sampleNum):
-        appName = "app%d" % sequenceID
-        length = chainLenSampleList[sequenceID]
+	print("Number of applications: %d" % sampleNum)
+	for sequenceID in range(sampleNum):
+		appName = "app%d" % sequenceID
+		length = chainLenSampleList[sequenceID]
 
-        # OpenWhisk's sequenceMaxActions is 50. But we extend it to 999999
-        # The configuration can be found in $OPENWHISK_SRC/ansible/group_vars/all
-        if length > 999999:
-            continue
+		# OpenWhisk's sequenceMaxActions is 50. But we extend it to 999999
+		# The configuration can be found in $OPENWHISK_SRC/ansible/group_vars/all
+		if length > 999999:
+			continue
 
-        # Create functions in the app
-        for functionID in range(length):
-            funcName = "func%s-%s" %(str(sequenceID).zfill(3), str(functionID).zfill(3))
-            mem = pickRandMem()
-            execTime = pickRandExecTime()
-            if execTime == 0:
-                execTime = 1
-            outfile.write("%s,%s,%d,%d\n" % (appName, funcName, mem, execTime))
-            totalFuncNum += 1
+		# Create functions in the app
+		for functionID in range(length):
+			funcName = "func%s-%s" %(str(sequenceID).zfill(3), str(functionID).zfill(3))
+			mem = pickRandMem()
+			if th == None:
+					execTime = pickRandExecTime()
+			else:
+					execTime = th
+			if execTime == 0:
+					execTime = 1
+			outfile.write("%s,%s,%d,%d\n" % (appName, funcName, mem, execTime))
+			totalFuncNum += 1
 
-        print("app%d creation complete" % sequenceID)
-    
-    print("Number of functions: %d" % totalFuncNum)
+		print("app%d creation complete" % sequenceID)
+	
+	print("Number of functions: %d" % totalFuncNum)
 
-    outfile.close()
-    return
-
-def sampleActionWskGen(chainLenSampleList):
-    sampleNum = len(chainLenSampleList)
-
-    for sequenceID in range(sampleNum):
-        appName = "app%d" % sequenceID
-        length = chainLenSampleList[sequenceID]
-
-        # TODO: OpenWhisk's sequenceMaxActions is 50
-        # The configuration can be found in $OPENWHISK_SRC/ansible/group_vars/all
-        if length > 50:
-            continue
-
-        funcChainStr = ""
-        # Create functions in the app
-        for functionID in range(length):
-            cmd = "./action_update.sh %d %d" %(sequenceID, functionID)
-            r = os.popen(cmd)
-            r.read()
-
-            funcName = "func%d-%d" %(sequenceID, functionID)
-            funcChainStr = funcChainStr + funcName + ","
-
-        # Eliminate the ',' in the end
-        funcChainStr = funcChainStr[:-1]
-        print("%s: %s" %(appName, funcChainStr))
-        cmd = "wsk -i action update %s --sequence %s" %(appName, funcChainStr)
-
-        # update the action sequence
-        r = os.popen(cmd)
-        r.read()
-
-        print("Sample creation complete")
-    return
-
+	outfile.close()
+	return
 
 if __name__ == '__main__':
-    genWorkloadDir(SAMPLE_NUM)
-    chainLenSampleList = chainLenSampleListGen(SAMPLE_NUM)
-    sampleActionCSVGen(chainLenSampleList)
+	argument = sys.arg
+	del argument[0]
+	th = None
+
+	if len(argument) != 0:
+		th = int(argument[0])
+
+	genWorkloadDir(SAMPLE_NUM)
+	chainLenSampleList = chainLenSampleListGen(SAMPLE_NUM)
+	sampleActionCSVGen(chainLenSampleList, th)
