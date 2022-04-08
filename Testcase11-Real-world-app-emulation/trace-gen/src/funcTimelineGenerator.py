@@ -53,6 +53,59 @@ def calAppExecTime(appList):
 	return (ret, funcPerApp)
 
 # Generate mapping between app and IAT
+def mapActionandIATSame(path):
+	actionFileName = "%s/appComputeInfo.csv" % path
+	IATFileName = "%s/possibleIATs.csv" % path
+	actionIATdict = {}	# key: action name, value: IAT
+
+	actionFile = open(actionFileName, "r")
+	IATFile = open(IATFileName, "r")
+
+	actionLines = actionFile.readlines()[1:]
+	IATLines = IATFile.readlines()[1:]
+
+	for idx, line in enumerate(IATLines):
+		IATLines[idx] = round(float(line[:-1]))
+
+	IATLines.sort()
+	appExecTime, funcsPerApp = calAppExecTime(actionLines)
+	possibleApps = {}   # key: IAT, value: list of map-able apps
+	IATcnt = {}    # key: IAT, value: count
+
+	for IAT in IATLines:
+		tmpList = []
+		for key, time in appExecTime.items():
+			if IAT > time:
+				tmpList.append(key)
+		if IATcnt.get(IAT) == None:
+			IATcnt[IAT] = 1
+		else:
+			IATcnt[IAT] += 1
+
+		possibleApps[IAT] = tmpList
+
+	allocated = []
+	for key, apps in possibleApps.items():
+		for i in range(IATcnt[key]):
+			dedup = dedupLists(apps, allocated)
+			selected = random.choice(dedup)
+			allocated.append(selected)
+			actionIATdict[selected] = key
+
+
+	print("App and IAT mapping done!")
+	actionFile.close()
+	IATFile.close()
+
+	rps = 0
+	for _, iat in actionIATdict.items():
+		rps += MILLISECONDS_PER_SEC / iat
+
+	print("Workload's estimated RPS: %d" % rps)
+
+	return (actionIATdict, appExecTime, funcsPerApp)
+
+# Generate mapping between app and IAT
 def mapActionandIAT(path):
 	actionFileName = "%s/appComputeInfo.csv" % path
 	IATFileName = "%s/possibleIATs.csv" % path
@@ -178,15 +231,18 @@ def invokeTimelineGenOld(actionDict):
 
 # argument: name of successful workload
 if __name__ == '__main__':
-	# argument = sys.argv
-	# del argument[0]
+	argument = sys.argv
+	del argument[0]
 
 	# if len(argument) > 0:
 	# 	baseDir = "%s/%s" % (successDir, argument[0])
 	# 	mapActionandIAT(baseDir)
 	# else:
 		# actionIATdict, appExecTime, funcsPerApp = mapActionandIAT(workloadDir)
+	if len(argument) > 0:
+		actionIATdict, appExecTime, funcsPerApp = mapActionandIATSame(workloadDir)
+	else:
+		actionIATdict, appExecTime, funcsPerApp = mapActionandIAT(workloadDir)
 
-	actionIATdict, appExecTime, funcsPerApp = mapActionandIAT(workloadDir)
 	writeMappingCSV(actionIATdict, appExecTime, funcsPerApp)
 	invokeTimelineGen(actionIATdict)

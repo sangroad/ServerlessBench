@@ -113,7 +113,7 @@ def sampleActionCSVGen(chainLenSampleList, th):
 	return
 
 if __name__ == '__main__':
-	argument = sys.arg
+	argument = sys.argv
 	del argument[0]
 	th = None
 

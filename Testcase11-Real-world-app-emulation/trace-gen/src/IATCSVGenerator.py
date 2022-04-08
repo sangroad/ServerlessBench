@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
 	if len(argument) != 0:
 		th = int(argument[0])
-		padding = th * 0.1
+		padding = th * 0.3
 		altTh = th + padding
 
 	sampleActionIATCSVGen(SAMPLE_NUM, th)
