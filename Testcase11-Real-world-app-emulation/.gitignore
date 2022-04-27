@@ -17,3 +17,4 @@ req_response
 success_run
 workload_type.txt
 *.png
+*.json

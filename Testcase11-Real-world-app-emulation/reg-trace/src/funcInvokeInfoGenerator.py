@@ -1,10 +1,10 @@
 import os
 import argparse
-from async_timeout import enum
 import yaml
 import numpy as np
 import pandas as pd
 import random
+import json
 
 SECONDS_OF_A_DAY = 3600*24
 MILLISECONDS_PER_SEC = 1000
@@ -16,14 +16,6 @@ successDir = "../CSVs/success"
 
 def dedupLists(list1, list2):
 	return list(set(list1) - set(list2))
-
-def getLeftIATs(IATs):
-	ret = []
-	for val in IATs:
-		if val != -1:
-			ret.append(val)
-
-	return ret
 
 def calAppExecTime(appList):
 	appExecTime = 0
@@ -180,35 +172,6 @@ def writeMappingCSV(actionDict, appExecTime, funcPerApp):
 
 	outfile.close()
 
-# Generate 1ms scale timeline
-def invokeTimelineGen(actionDict):
-	# millisecond
-	totalRunTime = config['total_run_time'] * MILLISECONDS_PER_SEC
-	timelineFileName = "%s/funcTimeline_%i.csv" % (workloadDir, SAMPLE_NUM)
-	timelineFile = open(timelineFileName, "w")
-	appNameStr = ""
-
-	for key in actionDict:
-		appNameStr += key + ","
-
-	appNameStr = appNameStr[:-1] + "\n"
-
-	timelineFile.write(appNameStr)
-	IATs = list(map(int, actionDict.values()))
-
-	for i in range(1, totalRunTime):
-		actionLen = len(actionDict)
-		data = np.zeros(actionLen)
-		for idx, val in enumerate(IATs):
-			if i % val == 0:
-				data[idx] = 1
-
-		dataStr = ','.join(["%d" % num for num in data]) + "\n"
-		timelineFile.write(dataStr)
-
-	timelineFile.close()
-	print("Function timeline generation complete!")
-
 def splitDict(inputDict, chunks):
 	cnt = 0
 	ret = []
@@ -235,41 +198,81 @@ def splitDict(inputDict, chunks):
 			cnt += 1
 
 	return ret	# list of dictionaries
+
 '''
 	----- csv file content -----
-	appName, IAT, start time(delay)
+	appName, IAT, start time(delay) -> function의 start time만 작성하면 IAT마다 호출되도록 구현
+	appName, start time -> 호출의 start time을 모두 작성. 이게 더 확장성 있을 듯
 '''
 # Generate 1ms scale timeline. This function generate slow-starting workload
-def invokeTimelineGenSlow(actionDict):
+def funcTraceGenSlow(actionDict):
 	# millisecond
 	totalRunTime = config['total_run_time'] * MILLISECONDS_PER_SEC
-	timelineFileName = "%s/funcTimeline_%i.csv" % (workloadDir, SAMPLE_NUM)
+	timelineFileName = "%s/funcTimeline.json" % (workloadDir)
 	# delayed start of functions
 	delay = 40 * MILLISECONDS_PER_SEC
 	# split actions into chunks
 	chunks = 12
-	invocations = 0
-	appCol = []
 
-	for key in actionDict:
-		appCol.append(key)
+	splitted = splitDict(actionDict, chunks)	# splitted into chunks. Each chunks are called in delay
 
-	timeline = pd.DataFrame(columns=appCol)
-	splitted = splitDict(actionDict, chunks)
-	# print(splitted)
-
+	traceDict = []
+	# for each splitted dictionary
 	for idx, val in enumerate(splitted):
 		startTime = delay * idx
+		# for each function
+		for name, iat in val.items():
+			invokeTime = startTime + iat
+			# for each function's iat
+			while True:
+				appInvoke = {}
+				appInvoke["appName"] = name
+				appInvoke["startTime"] = invokeTime 
+				traceDict.append(appInvoke)
 
-	rps = invocations / config['total_run_time']
+				invokeTime += iat
+				if invokeTime >= totalRunTime:
+					break
+
+	with open(timelineFileName, "w") as jsonFile:
+		json.dump(traceDict, jsonFile, indent=2)
+
+	rps = len(traceDict) / config['total_run_time']
 	print("Function timeline generation complete!")
 	print("Estimated rps: %d" % rps)
 
+# Generate 1ms scale timeline. Generate normal workload
+def funcTraceGen(actionDict):
+	# millisecond
+	totalRunTime = config['total_run_time'] * MILLISECONDS_PER_SEC
+	timelineFileName = "%s/funcTimeline.json" % (workloadDir)
+
+	traceDict = []
+	for name, iat in actionDict.items():
+		invokeTime = iat
+		# for each function's iat
+		while True:
+			appInvoke = {}
+			appInvoke["appName"] = name
+			appInvoke["startTime"] = invokeTime 
+			traceDict.append(appInvoke)
+
+			invokeTime += iat
+			if invokeTime >= totalRunTime:
+				break
+
+	# with open(timelineFileName, "w") as jsonFile:
+	# 	json.dump(traceDict, jsonFile, indent=2)
+
+	rps = len(traceDict) / config['total_run_time']
+	print("Function timeline generation complete!")
+	print("Estimated rps: %d" % rps)
 
 # argument: name of successful workload
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-th", "--threshold", type=int, help="runtime threshold for every functions")
+	parser.add_argument("-s", "--slow", action="store_true", help="generate slow-starting workload")
 	args = parser.parse_args()
 	th = args.threshold
 
@@ -278,6 +281,8 @@ if __name__ == '__main__':
 	else:
 		actionIATdict, appExecTime, funcsPerApp = mapActionandIAT(workloadDir)
 
-	writeMappingCSV(actionIATdict, appExecTime, funcsPerApp)
-	# invokeTimelineGen(actionIATdict)
-	invokeTimelineGenSlow(actionIATdict)
+	# writeMappingCSV(actionIATdict, appExecTime, funcsPerApp)
+	if args.slow == True:
+		funcTraceGenSlow(actionIATdict)
+	else:
+		funcTraceGen(actionIATdict)
