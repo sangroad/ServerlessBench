@@ -79,8 +79,9 @@ def drawPlot(path):
 
 
 if __name__ == "__main__":
-	csvPath = "../CSVs"
-	workload = "350"
+	csvPath = "../../CSVs"
+	# csvPath = "../../../trace-gen/CSVs"
+	workload = "400"
 	workloadPath = os.path.join(csvPath, workload)
 	invocation_dist_1s(workloadPath, workload)
 	drawPlot(workloadPath)

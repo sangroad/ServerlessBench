@@ -201,7 +201,6 @@ def splitDict(inputDict, chunks):
 
 '''
 	----- csv file content -----
-	appName, IAT, start time(delay) -> function의 start time만 작성하면 IAT마다 호출되도록 구현
 	appName, start time -> 호출의 start time을 모두 작성. 이게 더 확장성 있을 듯
 '''
 # Generate 1ms scale timeline. This function generate slow-starting workload
@@ -233,6 +232,8 @@ def funcTraceGenSlow(actionDict):
 				invokeTime += iat
 				if invokeTime >= totalRunTime:
 					break
+				
+	traceDict = sorted(traceDict, key=lambda d: d["startTime"])
 
 	with open(timelineFileName, "w") as jsonFile:
 		json.dump(traceDict, jsonFile, indent=2)
@@ -261,8 +262,10 @@ def funcTraceGen(actionDict):
 			if invokeTime >= totalRunTime:
 				break
 
-	# with open(timelineFileName, "w") as jsonFile:
-	# 	json.dump(traceDict, jsonFile, indent=2)
+	traceDict = sorted(traceDict, key=lambda d: d["startTime"])
+
+	with open(timelineFileName, "w") as jsonFile:
+		json.dump(traceDict, jsonFile, indent=2)
 
 	rps = len(traceDict) / config['total_run_time']
 	print("Function timeline generation complete!")
